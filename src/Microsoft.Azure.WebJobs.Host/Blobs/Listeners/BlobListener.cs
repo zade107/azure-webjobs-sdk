@@ -9,7 +9,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace Microsoft.Azure.WebJobs.Host.Blobs.Listeners
 {
-    internal sealed class BlobListener : IListener
+    internal class BlobListener : IListener
     {
         private readonly ISharedListener _sharedListener;
 

@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Host.Blobs.Listeners
                 BlobETagReader.Instance, new BlobReceiptManager(blobClient),
                 new BlobTriggerQueueWriter(hostBlobTriggerQueue, messageEnqueuedWatcher));
             await sharedBlobListener.RegisterAsync(_container, triggerExecutor, cancellationToken);
-            return new BlobListener(sharedBlobListener);
+            return new SingletonBlobListener(sharedBlobListener);
         }
 
         private IListener CreateQueueMessageToTriggerExecutionListener(

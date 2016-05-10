@@ -10,8 +10,6 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
 {
     internal sealed class CompositeListener : IListener
     {
-        private readonly IEnumerable<IListener> _listeners;
-
         private bool _disposed;
 
         public CompositeListener(params IListener[] listeners)
@@ -21,8 +19,10 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
 
         public CompositeListener(IEnumerable<IListener> listeners)
         {
-            _listeners = listeners;
+            Listeners = listeners;
         }
+
+        internal IEnumerable<IListener> Listeners { get; set; }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
 
             // start all listeners in parallel
             List<Task> tasks = new List<Task>();
-            foreach (IListener listener in _listeners)
+            foreach (IListener listener in Listeners)
             {
                 tasks.Add(listener.StartAsync(cancellationToken));
             }
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
 
             // stop all listeners in parallel
             List<Task> tasks = new List<Task>();
-            foreach (IListener listener in _listeners)
+            foreach (IListener listener in Listeners)
             {
                 tasks.Add(listener.StopAsync(cancellationToken));
             }
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
         {
             ThrowIfDisposed();
 
-            foreach (IListener listener in _listeners)
+            foreach (IListener listener in Listeners)
             {
                 listener.Cancel();
             }
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
         {
             if (!_disposed)
             {
-                foreach (IListener listener in _listeners)
+                foreach (IListener listener in Listeners)
                 {
                     listener.Dispose();
                 }

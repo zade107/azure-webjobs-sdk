@@ -379,6 +379,7 @@
     <Compile Include="Blobs\Listeners\ContainerScanInfo.cs" />
     <Compile Include="Blobs\Listeners\ScanBlobScanLogHybridPollingStrategy.cs" />
     <Compile Include="Bindings\AsyncCollector\AsyncCollectorBinding.cs" />
+    <Compile Include="Blobs\Listeners\SingletonBlobListener.cs" />
     <Compile Include="Triggers\StrategyTriggerBinding.cs" />
     <Compile Include="Bindings\ConstantValueProvider.cs" />
     <Compile Include="Bindings\ConverterManager.cs" />

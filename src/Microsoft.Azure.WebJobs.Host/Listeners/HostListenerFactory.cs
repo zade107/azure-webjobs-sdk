@@ -54,6 +54,28 @@ namespace Microsoft.Azure.WebJobs.Host.Listeners
 
                 IListener listener = await listenerFactory.CreateAsync(cancellationToken);
 
+                if (listener is CompositeListener)
+                {
+                    CompositeListener compositeListener = (CompositeListener)listener;
+                    if (compositeListener != null)
+                    {
+                        var newList = new List<IListener>();
+                        for (int i = 0; i < compositeListener.Listeners.Count(); i++)
+                        {
+                            SingletonAttribute singletonAttribute1 = SingletonManager.GetListenerSingletonOrNull(compositeListener.Listeners.ElementAt(i).GetType(), method);
+                            if (singletonAttribute1 != null)
+                            {
+                                newList.Add(new SingletonListener(method, singletonAttribute1, _singletonManager, compositeListener.Listeners.ElementAt(i)));
+                            }
+                            else
+                            {
+                                newList.Add(compositeListener.Listeners.ElementAt(i));
+                            }
+                        }
+                        compositeListener.Listeners = newList;
+                    }
+                }
+
                 // if the listener is a Singleton, wrap it with our SingletonListener
                 SingletonAttribute singletonAttribute = SingletonManager.GetListenerSingletonOrNull(listener.GetType(), method);
                 if (singletonAttribute != null)
