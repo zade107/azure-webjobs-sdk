@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 
 namespace SampleHost
 {
-    public static class Functions
+    public class Functions
     {
         public static void BlobTrigger(
             [BlobTrigger("test")] string blob)
