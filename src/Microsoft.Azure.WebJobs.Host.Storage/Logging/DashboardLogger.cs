@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Queues.Listeners;
 using Microsoft.Azure.WebJobs.Host.Timers;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace WebJobs.Host.Storage.Logging
 {
@@ -29,10 +30,10 @@ namespace WebJobs.Host.Storage.Logging
         private readonly IFunctionExecutor _functionExecutor;
         private readonly SharedQueueHandler _sharedQueueHandler;
         private readonly ILoadBalancerQueue _queueFactory;
-        private readonly StorageAccountOptions _storageAccountOptions;
+        private readonly IOptions<StorageAccountOptions> _storageAccountOptions;
 
         public DashboardLoggingSetup(
-            StorageAccountOptions storageAccountOptions,
+            IOptions<StorageAccountOptions> storageAccountOptions,
             IWebJobsExceptionHandler exceptionHandler,
             ILoggerFactory loggerFactory,
             IFunctionInstanceLogger functionInstanceLogger,
@@ -81,7 +82,7 @@ namespace WebJobs.Host.Storage.Logging
                 ExpirationInSeconds = (int)HeartbeatIntervals.ExpirationInterval.TotalSeconds
             };
 
-            var dashboardAccount = _storageAccountOptions.GetDashboardStorageAccount();
+            var dashboardAccount = _storageAccountOptions.Value.GetDashboardStorageAccount();
 
             var blob = dashboardAccount.CreateCloudBlobClient()
                 .GetContainerReference(heartbeatDescriptor.SharedContainerName)

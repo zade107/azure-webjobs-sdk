@@ -19,7 +19,8 @@ namespace SampleHost
                 .UseEnvironment("Development")
                 .ConfigureWebJobs(b =>
                 {
-                    b.AddAzureStorageCoreServices()
+                    b.AddDashboardLogging()
+                    .AddAzureStorageCoreServices()
                     .AddAzureStorage()
                     .AddServiceBus()
                     .AddEventHubs();
