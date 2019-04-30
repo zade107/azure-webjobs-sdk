@@ -289,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Host.FunctionalTests.Blobs.Listeners
             RunExecuteWithMultiPollingInterval(expectedNames, product, executor, testScanBlobLimitPerPoll);
 
             DateTime? storedTime = await testScanInfoManager.LoadLatestScanAsync(accountName, containerName);
-            Assert.True(storedTime < earliestErrorTime);
+            Assert.Equal(earliestErrorTime, storedTime);
             Assert.Equal(1, testScanInfoManager.UpdateCounts[accountName][containerName]);
             Assert.Equal(2, container.CallCount);
         }
@@ -353,7 +353,6 @@ namespace Microsoft.Azure.WebJobs.Host.FunctionalTests.Blobs.Listeners
             var blobNameMap = blobNames.ToDictionary(n => n, n => 0);
             RunExecuterWithExpectedBlobsInternal(blobNameMap, product, executor, blobNames.Count);
         }
-
 
         private void RunExecuterWithExpectedBlobs(IDictionary<string, int> blobNameMap, IBlobListenerStrategy product, LambdaBlobTriggerExecutor executor)
         {

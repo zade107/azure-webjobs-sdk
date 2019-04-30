@@ -147,11 +147,7 @@ namespace Microsoft.Azure.WebJobs.Host.Blobs.Listeners
                     latestScan = failedNotifications.Min(n => n.Properties.LastModified.Value.UtcDateTime);
                 }
 
-                // Store our timestamp slightly earlier than the last timestamp. This is a failsafe for any blobs that created 
-                // milliseconds after our last scan (blob timestamps round to the second). This way we make sure to pick those
-                // up on a host restart.
-                await _blobScanInfoManager.UpdateLatestScanAsync(container.ServiceClient.Credentials.AccountName,
-                    container.Name, latestScan.AddMilliseconds(-1));
+                await _blobScanInfoManager.UpdateLatestScanAsync(container.ServiceClient.Credentials.AccountName, container.Name, latestScan);
             }
         }
 
@@ -223,9 +219,16 @@ namespace Microsoft.Azure.WebJobs.Host.Blobs.Listeners
                 }
             }
 
-            List<ICloudBlob> newBlobs = new List<ICloudBlob>();
+            DateTime lastSweepCycleLatestModified = containerScanInfo.LastSweepCycleLatestModified;
+            if (lastSweepCycleLatestModified > DateTime.MinValue)
+            {
+                // For comparisons, use a timestamp slightly earlier than the last timestamp. This is a failsafe for
+                // any blobs created/modified milliseconds after our last scan (blob timestamps round to the second).
+                lastSweepCycleLatestModified = lastSweepCycleLatestModified.AddMilliseconds(-1);
+            }
 
             // Type cast to IStorageBlob is safe due to useFlatBlobListing: true above.
+            List<ICloudBlob> newBlobs = new List<ICloudBlob>();
             foreach (ICloudBlob currentBlob in currentBlobs)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -238,7 +241,7 @@ namespace Microsoft.Azure.WebJobs.Host.Blobs.Listeners
                     containerScanInfo.CurrentSweepCycleLatestModified = lastModifiedTimestamp;
                 }
 
-                if (lastModifiedTimestamp > containerScanInfo.LastSweepCycleLatestModified)
+                if (lastModifiedTimestamp > lastSweepCycleLatestModified)
                 {
                     newBlobs.Add(currentBlob);
                 }
