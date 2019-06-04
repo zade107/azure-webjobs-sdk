@@ -23,14 +23,14 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.UnitTests.Triggers
 
         public ServiceBusTriggerBindingIntegrationTests()
         {
-            IQueueTriggerArgumentBindingProvider provider = new UserTypeArgumentBindingProvider();
+            IQueueTriggerArgumentBindingProvider<Message> provider = new UserTypeArgumentBindingProvider<Message>();
             ParameterInfo pi = new StubParameterInfo("parameterName", typeof(UserDataType));
             var argumentBinding = provider.TryCreate(pi);
             var options = new ServiceBusOptions();
 
             var messagingProvider = new MessagingProvider(new OptionsWrapper<ServiceBusOptions>(options));
-            _queueBinding = new ServiceBusTriggerBinding("parameterName", typeof(UserDataType), argumentBinding, null, options, messagingProvider);
-            _topicBinding = new ServiceBusTriggerBinding("parameterName", typeof(UserDataType), argumentBinding, null, options, messagingProvider);
+            _queueBinding = new ServiceBusTriggerBinding<Message>("parameterName", typeof(UserDataType), argumentBinding, null, options, messagingProvider);
+            _topicBinding = new ServiceBusTriggerBinding<Message>("parameterName", typeof(UserDataType), argumentBinding, null, options, messagingProvider);
         }
 
         [Theory]

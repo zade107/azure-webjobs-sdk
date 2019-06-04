@@ -24,5 +24,21 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
                 return new StringToJsonMessageConverter();
             }
         }
+
+        public static IConverter<string[], Message[]> CreateAsMultiple(Type parameterType)
+        {
+            if (parameterType == typeof(Message[]) || parameterType == typeof(string[]))
+            {
+                return new StringArrayToTextMessageArrayConverter();
+            }
+            else if (parameterType == typeof(byte[]))
+            {
+                return new StringArrayToBinarydMessageArrayConverter();
+            }
+            else
+            {
+                return new StringArrayToJsonMessageArrayConverter();
+            }
+        }
     }
 }

@@ -9,20 +9,20 @@ using Microsoft.Azure.ServiceBus;
 
 namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
 {
-    internal class CompositeArgumentBindingProvider : IQueueTriggerArgumentBindingProvider
+    internal class CompositeArgumentBindingProvider<T> : IQueueTriggerArgumentBindingProvider<T>
     {
-        private readonly IEnumerable<IQueueTriggerArgumentBindingProvider> _providers;
+        private readonly IEnumerable<IQueueTriggerArgumentBindingProvider<T>> _providers;
 
-        public CompositeArgumentBindingProvider(params IQueueTriggerArgumentBindingProvider[] providers)
+        public CompositeArgumentBindingProvider(params IQueueTriggerArgumentBindingProvider<T>[] providers)
         {
             _providers = providers;
         }
 
-        public ITriggerDataArgumentBinding<Message> TryCreate(ParameterInfo parameter)
+        public ITriggerDataArgumentBinding<T> TryCreate(ParameterInfo parameter)
         {
-            foreach (IQueueTriggerArgumentBindingProvider provider in _providers)
+            foreach (IQueueTriggerArgumentBindingProvider<T> provider in _providers)
             {
-                ITriggerDataArgumentBinding<Message> binding = provider.TryCreate(parameter);
+                ITriggerDataArgumentBinding<T> binding = provider.TryCreate(parameter);
 
                 if (binding != null)
                 {

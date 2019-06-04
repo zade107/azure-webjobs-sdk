@@ -19,6 +19,14 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Listeners
             _innerExecutor = innerExecutor;
         }
 
+        public bool IsSingle
+        {
+            get
+            {
+                return _innerExecutor.GetType().GetGenericTypeDefinition() == typeof(Message);
+            }
+        }
+
         public async Task<FunctionResult> ExecuteAsync(Message value, CancellationToken cancellationToken)
         {
             Guid? parentId = ServiceBusCausalityHelper.GetOwner(value);
@@ -27,6 +35,15 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Listeners
                 ParentId = parentId,
                 TriggerValue = value,
                 TriggerDetails = PopulateTriggerDetails(value)
+            };
+            return await _innerExecutor.TryExecuteAsync(input, cancellationToken);
+        }
+
+        public async Task<FunctionResult> ExecuteAsync(Message[] messages, CancellationToken cancellationToken)
+        {
+            TriggeredFunctionData input = new TriggeredFunctionData
+            {
+                TriggerValue = messages
             };
             return await _innerExecutor.TryExecuteAsync(input, cancellationToken);
         }

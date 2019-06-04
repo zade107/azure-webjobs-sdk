@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
@@ -43,10 +45,23 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
             return _invokeString;
         }
 
-        public static async Task<MessageValueProvider> CreateAsync(Message clone, object value,
+        public static async Task<MessageValueProvider> CreateAsync(object clone, object value,
             Type valueType, CancellationToken cancellationToken)
         {
-            string invokeString = await CreateInvokeStringAsync(clone, cancellationToken);
+            string invokeString = string.Empty;
+            if (clone.GetType().IsArray)
+            {
+                Message[] messages = (Message[])clone;
+                Task<string>[] tasks = messages.Select(async x => {
+                    return await CreateInvokeStringAsync(x, cancellationToken);
+                }).ToArray();
+                string[] arrayInvokeString = await Task.WhenAll(tasks);
+                invokeString = string.Join(", ", arrayInvokeString);
+            }
+            else
+            {
+                invokeString = await CreateInvokeStringAsync((Message)clone, cancellationToken);
+            }
             return new MessageValueProvider(value, valueType, invokeString);
         }
 

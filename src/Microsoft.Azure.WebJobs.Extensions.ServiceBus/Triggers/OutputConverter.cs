@@ -6,17 +6,18 @@ using Microsoft.Azure.ServiceBus;
 
 namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
 {
-    internal class OutputConverter<TInput> : IObjectToTypeConverter<Message>
+    internal class OutputConverter<TInput, TOutput> : IObjectToTypeConverter<TOutput>
         where TInput : class
+        where TOutput : class
     {
-        private readonly IConverter<TInput, Message> _innerConverter;
+        private readonly IConverter<TInput, TOutput> _innerConverter;
 
-        public OutputConverter(IConverter<TInput, Message> innerConverter)
+        public OutputConverter(IConverter<TInput, TOutput> innerConverter)
         {
             _innerConverter = innerConverter;
         }
 
-        public bool TryConvert(object input, out Message output)
+        public bool TryConvert(object input, out TOutput output)
         {
             TInput typedInput = input as TInput;
 

@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
@@ -24,7 +26,6 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Listeners
         private ClientEntity _clientEntity;
         private bool _disposed;
         private bool _started;
-
         private IMessageSession _messageSession;
         private SessionMessageProcessor _sessionMessageProcessor;
 
@@ -33,7 +34,12 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Listeners
             _triggerExecutor = triggerExecutor;
             _cancellationTokenSource = new CancellationTokenSource();
             _messagingProvider = messagingProvider;
-            _serviceBusAccount = serviceBusAccount;        
+            _serviceBusAccount = serviceBusAccount;
+
+            if (!_triggerExecutor.IsSingle && serviceBusAccount.IsSessionsEnabled)
+            {
+                throw new InvalidOperationException("Batch triggering is not supported for sessions enabled entity.");
+            }
 
             if (serviceBusAccount.IsSessionsEnabled)
             {
@@ -75,8 +81,16 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Listeners
             }
             else
             {
-                _receiver = _messagingProvider.CreateMessageReceiver(_serviceBusAccount.EntityPath, _serviceBusAccount.ConnectionString);
-                _receiver.RegisterMessageHandler(ProcessMessageAsync, _serviceBusOptions.MessageHandlerOptions);
+                if (_triggerExecutor.IsSingle)
+                {
+                    _receiver = _messagingProvider.CreateMessageReceiver(_serviceBusAccount.EntityPath, _serviceBusAccount.ConnectionString);
+                    _receiver.RegisterMessageHandler(ProcessMessageAsync, _serviceBusOptions.MessageHandlerOptions);
+                }
+                else
+                {
+                    _receiver = _messagingProvider.CreateMessageReceiver(_serviceBusAccount.EntityPath, _serviceBusAccount.ConnectionString);
+                    StartMultipleMessageProcessing(cancellationToken);
+                }
             }
             _started = true;
 
@@ -164,6 +178,40 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Listeners
 
             FunctionResult result = await _triggerExecutor.ExecuteAsync(message, cancellationToken);
             await _sessionMessageProcessor.CompleteProcessingMessageAsync(session, message, result, cancellationToken);
+        }
+
+        internal void StartMultipleMessageProcessing(CancellationToken cancellationToken)
+        {
+            Thread thread = new Thread(async () =>
+            {
+                while (true)
+                {
+                    if (_receiver == null || cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    IList<Message> messages = await _receiver.ReceiveAsync(100, TimeSpan.FromSeconds(5));
+                    if (messages != null)
+                    {
+                        await _triggerExecutor.ExecuteAsync(messages.ToArray(), cancellationToken);
+                    }
+
+                    Task[] completeTasks = messages.Select(x =>
+                    {
+                        return new Task(async () =>
+                        {
+                            await _receiver.CompleteAsync(x.SystemProperties.LockToken);
+                        });
+                    }).ToArray();
+
+                    await Task.WhenAll(completeTasks);
+
+                    await Task.Delay(2000);
+                }
+            });
+
+            thread.Start();
         }
 
         private void ThrowIfDisposed()

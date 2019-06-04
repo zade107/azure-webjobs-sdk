@@ -11,25 +11,35 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
 using Microsoft.Azure.ServiceBus.InteropExtensions;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
 {
-    internal class UserTypeArgumentBindingProvider : IQueueTriggerArgumentBindingProvider
+    internal class UserTypeArgumentBindingProvider<T> : IQueueTriggerArgumentBindingProvider<T>
     {
-        public ITriggerDataArgumentBinding<Message> TryCreate(ParameterInfo parameter)
+        public ITriggerDataArgumentBinding<T> TryCreate(ParameterInfo parameter)
         {
             // At indexing time, attempt to bind all types.
             // (Whether or not actual binding is possible depends on the message shape at runtime.)
             return CreateBinding(parameter.ParameterType);
         }
 
-        private static ITriggerDataArgumentBinding<Message> CreateBinding(Type itemType)
+        private static ITriggerDataArgumentBinding<T> CreateBinding(Type itemType)
         {
-            Type genericType = typeof(UserTypeArgumentBinding<>).MakeGenericType(itemType);
-            return (ITriggerDataArgumentBinding<Message>)Activator.CreateInstance(genericType);
+            Type genericType = null;
+            if (itemType.IsArray)
+            {
+            //    genericType = typeof(UserTypeArgumentBinding<>).MakeArrayType().MakeGenericType(itemType);
+            //}
+            //else
+            //{
+
+                genericType = typeof(UserTypeArgumentBinding<>).MakeGenericType(itemType);
+            }
+            return (ITriggerDataArgumentBinding<T>)Activator.CreateInstance(genericType);
         }
 
-        private class UserTypeArgumentBinding<TInput> : ITriggerDataArgumentBinding<Message>
+        private class UserTypeArgumentBinding<TInput> : ITriggerDataArgumentBinding<T>
         {
             private readonly IBindingDataProvider _bindingDataProvider;
 
@@ -48,12 +58,24 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
                 get { return _bindingDataProvider != null ? _bindingDataProvider.Contract : null; }
             }
 
-            public async Task<ITriggerData> BindAsync(Message value, ValueBindingContext context)
+            public async Task<ITriggerData> BindAsync(T value, ValueBindingContext context)
             {
                 IValueProvider provider;
-                Message clone = value.Clone();
 
-                TInput contents = GetBody(value, context);
+                Message message = value as Message;
+                object clone = null;
+                object contents = null;
+                if (message != null)
+                {
+                    clone = message.Clone();
+                    contents = GetBody(value as Message, context);
+                }
+                else
+                {
+                    Message[] messages = value as Message[];
+                    clone = messages.Select(x => x.Clone()).ToArray();
+                    contents = messages.Select(x => GetBody(x, context)).ToArray();
+                }
 
                 if (contents == null)
                 {

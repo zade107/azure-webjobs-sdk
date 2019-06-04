@@ -7,8 +7,8 @@ using Microsoft.Azure.ServiceBus;
 
 namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
 {
-    internal interface IQueueTriggerArgumentBindingProvider
+    internal interface IQueueTriggerArgumentBindingProvider<T>
     {
-        ITriggerDataArgumentBinding<Message> TryCreate(ParameterInfo parameter);
+        ITriggerDataArgumentBinding<T> TryCreate(ParameterInfo parameter);
     }
 }

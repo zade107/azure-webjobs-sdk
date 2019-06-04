@@ -138,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.ServiceBus
             return new SessionMessageProcessor(GetOrAddClientEntity(entityPath, connectionString), _options.SessionHandlerOptions);
         }
 
-        private MessageReceiver GetOrAddMessageReceiver(string entityPath, string connectionString)
+        public MessageReceiver GetOrAddMessageReceiver(string entityPath, string connectionString)
         {
             string cacheKey = $"{entityPath}-{connectionString}";
             return _messageReceiverCache.GetOrAdd(cacheKey,

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Azure.ServiceBus.Core;
@@ -17,11 +18,11 @@ using Microsoft.Azure.WebJobs.ServiceBus.Listeners;
 
 namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
 {
-    internal class ServiceBusTriggerBinding : ITriggerBinding
+    internal class ServiceBusTriggerBinding<T> : ITriggerBinding
     {
         private readonly string _parameterName;
-        private readonly IObjectToTypeConverter<Message> _converter;
-        private readonly ITriggerDataArgumentBinding<Message> _argumentBinding;
+        private readonly IObjectToTypeConverter<T> _converter;
+        private readonly ITriggerDataArgumentBinding<T> _argumentBinding;
         private readonly IReadOnlyDictionary<string, Type> _bindingDataContract;
         private readonly ServiceBusAccount _account;
         private readonly ServiceBusOptions _options;
@@ -29,11 +30,11 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
         private readonly MessagingProvider _messagingProvider;
 
 
-        public ServiceBusTriggerBinding(string parameterName, Type parameterType, ITriggerDataArgumentBinding<Message> argumentBinding,
+        public ServiceBusTriggerBinding(string parameterName, Type parameterType, ITriggerDataArgumentBinding<T> argumentBinding,
             ServiceBusAccount account, ServiceBusOptions options, MessagingProvider messagingProvider)
         {
             _parameterName = parameterName;
-            _converter = CreateConverter(parameterType);
+            _converter = typeof(T).IsArray ? CreateConverterArray(parameterType) as IObjectToTypeConverter<T> : CreateConverter(parameterType) as IObjectToTypeConverter<T>;
             _argumentBinding = argumentBinding;
             _bindingDataContract = CreateBindingDataContract(argumentBinding.BindingDataContract);
             _account = account;
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
         {
             get
             {
-                return typeof(Message);
+                return typeof(T);
             }
         }
 
@@ -56,14 +57,22 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
 
         public async Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
         {
-            Message message = value as Message;
-            if (message == null && !_converter.TryConvert(value, out message))
+            ITriggerData triggerData = null;
+            IReadOnlyDictionary<string, object> bindingData;
+            if (value != null)
             {
-                throw new InvalidOperationException("Unable to convert trigger to BrokeredMessage.");
+                T outMeesage = default(T);
+                if (!_converter.TryConvert(value, out outMeesage))
+                {
+                    throw new InvalidOperationException("Unable to convert trigger to Message.");
+                }
+                triggerData = await (_argumentBinding as ITriggerDataArgumentBinding<T>).BindAsync(outMeesage, context);
+                bindingData = CreateBindingData(outMeesage as Message, _listener?.Receiver, _listener?.MessageSession, triggerData.BindingData);
             }
-
-            ITriggerData triggerData = await _argumentBinding.BindAsync(message, context);
-            IReadOnlyDictionary<string, object> bindingData = CreateBindingData(message, _listener?.Receiver, _listener?.MessageSession, triggerData.BindingData);
+            else
+            {
+                throw new InvalidOperationException("Unable to convert trigger to Message.");
+            }
 
             return new TriggerData(triggerData.ValueProvider, bindingData);
         }
@@ -117,19 +126,22 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
         {
             var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-            SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.DeliveryCount), value.SystemProperties.DeliveryCount));
-            SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.DeadLetterSource), value.SystemProperties.DeadLetterSource));
-            SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.LockToken), value.SystemProperties.IsLockTokenSet ? value.SystemProperties.LockToken : string.Empty));
-            SafeAddValue(() => bindingData.Add(nameof(value.ExpiresAtUtc), value.ExpiresAtUtc));
-            SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.EnqueuedTimeUtc), value.SystemProperties.EnqueuedTimeUtc));
-            SafeAddValue(() => bindingData.Add(nameof(value.MessageId), value.MessageId));
-            SafeAddValue(() => bindingData.Add(nameof(value.ContentType), value.ContentType));
-            SafeAddValue(() => bindingData.Add(nameof(value.ReplyTo), value.ReplyTo));
-            SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.SequenceNumber), value.SystemProperties.SequenceNumber));
-            SafeAddValue(() => bindingData.Add(nameof(value.To), value.To));
-            SafeAddValue(() => bindingData.Add(nameof(value.Label), value.Label));
-            SafeAddValue(() => bindingData.Add(nameof(value.CorrelationId), value.CorrelationId));
-            SafeAddValue(() => bindingData.Add(nameof(value.UserProperties), value.UserProperties));
+            if (value != null)
+            {
+                SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.DeliveryCount), value.SystemProperties.DeliveryCount));
+                SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.DeadLetterSource), value.SystemProperties.DeadLetterSource));
+                SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.LockToken), value.SystemProperties.IsLockTokenSet ? value.SystemProperties.LockToken : string.Empty));
+                SafeAddValue(() => bindingData.Add(nameof(value.ExpiresAtUtc), value.ExpiresAtUtc));
+                SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.EnqueuedTimeUtc), value.SystemProperties.EnqueuedTimeUtc));
+                SafeAddValue(() => bindingData.Add(nameof(value.MessageId), value.MessageId));
+                SafeAddValue(() => bindingData.Add(nameof(value.ContentType), value.ContentType));
+                SafeAddValue(() => bindingData.Add(nameof(value.ReplyTo), value.ReplyTo));
+                SafeAddValue(() => bindingData.Add(nameof(value.SystemProperties.SequenceNumber), value.SystemProperties.SequenceNumber));
+                SafeAddValue(() => bindingData.Add(nameof(value.To), value.To));
+                SafeAddValue(() => bindingData.Add(nameof(value.Label), value.Label));
+                SafeAddValue(() => bindingData.Add(nameof(value.CorrelationId), value.CorrelationId));
+                SafeAddValue(() => bindingData.Add(nameof(value.UserProperties), value.UserProperties));
+            }
             SafeAddValue(() => bindingData.Add("MessageReceiver", receiver));
             SafeAddValue(() => bindingData.Add("MessageSession", messageSession));
 
@@ -171,8 +183,15 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
         private static IObjectToTypeConverter<Message> CreateConverter(Type parameterType)
         {
             return new CompositeObjectToTypeConverter<Message>(
-                    new OutputConverter<Message>(new IdentityConverter<Message>()),
-                    new OutputConverter<string>(StringTodMessageConverterFactory.Create(parameterType)));
+                    new OutputConverter<Message, Message>(new IdentityConverter<Message>()),
+                    new OutputConverter<string, Message>(StringTodMessageConverterFactory.Create(parameterType)));
+        }
+
+        private static IObjectToTypeConverter<Message[]> CreateConverterArray(Type parameterType)
+        {
+            return new CompositeObjectToTypeConverter<Message[]>(
+                    new OutputConverter<Message[], Message[]>(new IdentityConverter<Message[]>()),
+                    new OutputConverter<string[], Message[]>(StringTodMessageConverterFactory.CreateAsMultiple(parameterType)));
         }
     }
 }

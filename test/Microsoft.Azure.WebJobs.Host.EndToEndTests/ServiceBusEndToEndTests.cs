@@ -160,6 +160,51 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             Assert.Equal("Test-topic-1", _resultMessage1);
         }
 
+        [Fact]
+        public async Task MultipleMessagesAreTriggered()
+        {
+            //await TestMultiple<ServiceBusMultipleMessagesTestJobs1>();
+            //await Cleanup();
+            //await TestMultiple<ServiceBusMultipleMessagesTestJobs2>();
+            //await Cleanup();
+            await TestMultiple<ServiceBusMultipleMessagesTestJobs3>();
+        }
+
+        private async Task TestMultiple<T>()
+        {
+            IHost host = new HostBuilder()
+               .ConfigureDefaultTestHost<T>(b =>
+               {
+                   b.AddAzureStorage()
+                   .AddServiceBus();
+               }, nameResolver: _nameResolver)
+               .ConfigureServices(services =>
+               {
+                   services.AddSingleton<MessagingProvider, CustomMessagingProvider>();
+               })
+               .Build();
+
+            await WriteQueueMessage(_primaryConnectionString, FirstQueueName, "{'Name': 'Test1', 'Value': 'Value'}");
+            await WriteQueueMessage(_primaryConnectionString, FirstQueueName, "{'Name': 'Test2', 'Value': 'Value'}");
+
+            // wait until all messages are in place
+            await Task.Delay(3000);
+
+            _topicSubscriptionCalled1 = new ManualResetEvent(initialState: false);
+
+            await host.StartAsync();
+
+            bool result = _topicSubscriptionCalled1.WaitOne(SBTimeout);
+            Assert.True(result);
+
+            // ensure all logs have had a chance to flush
+            await Task.Delay(3000);
+
+            // Wait for the host to terminate
+            await host.StopAsync();
+            host.Dispose();
+        }
+
         private async Task<int> CleanUpEntity(string queueName, string connectionString = null)
         {
             var messageReceiver = new MessageReceiver(!string.IsNullOrEmpty(connectionString) ? connectionString : _primaryConnectionString, queueName, ReceiveMode.ReceiveAndDelete);
@@ -465,6 +510,69 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
 
                 await collector.FlushAsync();
             }
+        }
+
+        public class ServiceBusMultipleMessagesTestJobs1 : ServiceBusTestJobsBase
+        {
+            public static async Task SBQueue2SBQueue(
+                [ServiceBusTrigger(FirstQueueName)] string[] messages,
+                MessageReceiver messageReceiver)
+            {
+                Assert.Equal(FirstQueueName, messageReceiver.Path);
+                Assert.Equal(messages.Length, 2);
+                Assert.Contains("Test1", messages);
+                Assert.Contains("Test2", messages);
+                await Task.Delay(1);
+
+                _topicSubscriptionCalled1.Set();
+            }
+        }
+
+        public class ServiceBusMultipleMessagesTestJobs2 : ServiceBusTestJobsBase
+        {
+            public static async Task SBQueue2SBQueue(
+                [ServiceBusTrigger(FirstQueueName)] Message[] array,
+                MessageReceiver messageReceiver)
+            {
+                Assert.Equal(FirstQueueName, messageReceiver.Path);
+                Assert.Equal(array.Length, 2);
+                string[] messages = array.Select(x =>
+                {
+                    using (Stream stream = new MemoryStream(x.Body))
+                    using (TextReader reader = new StreamReader(stream))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }).ToArray();
+                Assert.Contains("Test1", messages);
+                Assert.Contains("Test2", messages);
+                await Task.Delay(1);
+
+                _topicSubscriptionCalled1.Set();
+            }
+        }
+
+        public class ServiceBusMultipleMessagesTestJobs3 : ServiceBusTestJobsBase
+        {
+            public static async Task SBQueue2SBQueue(
+                [ServiceBusTrigger(FirstQueueName)] DummyClass[] array,
+                MessageReceiver messageReceiver)
+            {
+                Assert.Equal(FirstQueueName, messageReceiver.Path);
+                Assert.Equal(array.Length, 2);
+                string[] messages = array.Select(x => x.Name).ToArray();
+                Assert.Contains("Test1", messages);
+                Assert.Contains("Test2", messages);
+                await Task.Delay(1);
+
+                _topicSubscriptionCalled1.Set();
+            }
+        }
+
+        public class DummyClass
+        {
+            public string Name { get; set; }
+            public string Value { get; set; }
         }
 
         public class ServiceBusTestJobsEntityPath : ServiceBusTestJobsBase
