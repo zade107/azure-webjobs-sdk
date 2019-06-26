@@ -95,8 +95,10 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             IHost host = new HostBuilder()
                 .ConfigureDefaultTestHost<ServiceBusTestJobs>(b =>
                 {
-                    b.AddAzureStorage()
-                    .AddServiceBus();
+                    //b.AddAzureStorage()
+                    //.AddServiceBus();
+
+                    b.AddServiceBus();
                 })
                 .ConfigureServices(services =>
                 {
@@ -121,8 +123,10 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             IHost host = new HostBuilder()
                .ConfigureDefaultTestHost<ServiceBusTestJobs>(b =>
                {
-                   b.AddAzureStorage()
-                   .AddServiceBus();
+                   //b.AddAzureStorage()
+                   //.AddServiceBus();
+
+                   b.AddServiceBus();
                }, nameResolver: _nameResolver)
                .ConfigureServices(services =>
                {
@@ -185,8 +189,10 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             return new HostBuilder()
                 .ConfigureDefaultTestHost<ServiceBusTestJobs>(b =>
                 {
-                    b.AddAzureStorage()
-                    .AddServiceBus();
+                    //b.AddAzureStorage()
+                    //.AddServiceBus();
+
+                    b.AddServiceBus();
                 })
                 .ConfigureServices(services =>
                 {
@@ -265,10 +271,6 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
                     "Job host stopped",
                     "Starting JobHost",
                     "Stopping JobHost",
-                    "BlobsOptions",
-                    "{",
-                    "  \"CentralizedPoisonQueue\": false",
-                    "}",
                     "FunctionResultAggregatorOptions",
                     "{",
                     "  \"BatchSize\": 1000",
@@ -279,14 +281,6 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
                     "{",
                     "  \"MinLevel\": \"Information\"",
                     "  \"Rules\": []",
-                    "}",
-                    "QueuesOptions",
-                    "{",
-                    "  \"BatchSize\": 16",
-                    "  \"MaxDequeueCount\": 5,",
-                    "  \"MaxPollingInterval\": \"00:00:02\",",
-                    "  \"NewBatchThreshold\": 8,",
-                    "  \"VisibilityTimeout\": \"00:00:00\"",
                     "}",
                     "ServiceBusOptions",
                     "{",
