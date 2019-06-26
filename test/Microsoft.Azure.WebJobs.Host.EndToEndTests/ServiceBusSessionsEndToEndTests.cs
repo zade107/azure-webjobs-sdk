@@ -538,8 +538,7 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             return new HostBuilder()
                 .ConfigureDefaultTestHost<T>(b =>
                 {
-                    b.AddAzureStorage()
-                    .AddServiceBus();
+                    b.AddServiceBus();
                 })
                 .ConfigureServices(services =>
                 {

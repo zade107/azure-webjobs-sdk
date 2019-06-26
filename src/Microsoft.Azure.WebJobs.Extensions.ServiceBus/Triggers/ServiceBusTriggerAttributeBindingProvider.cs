@@ -82,7 +82,8 @@ namespace Microsoft.Azure.WebJobs.ServiceBus.Triggers
                 DisplayHints = hints
             };
 
-            ITriggerBinding binding = BindingFactory.GetTriggerBinding(new ServiceBusTriggerBindingStrategy(), parameter, _converterManager, createListener, parameterDescriptor);
+            //ITriggerBinding binding = BindingFactory.GetTriggerBinding(new ServiceBusTriggerBindingStrategy(), parameter, _converterManager, createListener, parameterDescriptor);
+            ITriggerBinding binding = BindingFactory.GetTriggerBinding(new ServiceBusTriggerBindingStrategy(), parameter, _converterManager, createListener);
 
             return Task.FromResult<ITriggerBinding>(binding);
         }

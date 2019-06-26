@@ -110,8 +110,7 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             IHost host = new HostBuilder()
                 .ConfigureDefaultTestHost<ServiceBusTestJobs>(b =>
                 {
-                    b.AddAzureStorage()
-                    .AddServiceBus();
+                    b.AddServiceBus();
                 })
                 .ConfigureServices(services =>
                 {
@@ -136,8 +135,7 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             IHost host = new HostBuilder()
                .ConfigureDefaultTestHost<ServiceBusTestJobs>(b =>
                {
-                   b.AddAzureStorage()
-                   .AddServiceBus();
+                   b.AddServiceBus();
                }, nameResolver: _nameResolver)
                .ConfigureServices(services =>
                {
@@ -197,8 +195,7 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             IHost host = new HostBuilder()
                .ConfigureDefaultTestHost<T>(b =>
                {
-                   b.AddAzureStorage()
-                   .AddServiceBus();
+                   b.AddServiceBus();
                }, nameResolver: _nameResolver)
                .Build();
 
@@ -263,8 +260,7 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
             return new HostBuilder()
                 .ConfigureDefaultTestHost<T>(b =>
                 {
-                    b.AddAzureStorage()
-                    .AddServiceBus();
+                    b.AddServiceBus();
                 })
                 .ConfigureServices(services =>
                 {
@@ -328,25 +324,21 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
                     $"{jobContainerType.FullName}.SBTopicListener2",
                     $"{jobContainerType.FullName}.ServiceBusBinderTest",
                     "Job host started",
-                    $"Executing '{jobContainerType.Name}.SBQueue2SBQueue' (Reason='New ServiceBus message detected on '{FirstQueueName}'.', Id=",
+                    $"Executing '{jobContainerType.Name}.SBQueue2SBQueue' (Reason='', Id=",
                     $"Executed '{jobContainerType.Name}.SBQueue2SBQueue' (Succeeded, Id=",
                     $"Trigger Details:",
-                    $"Executing '{jobContainerType.Name}.SBQueue2SBTopic' (Reason='New ServiceBus message detected on '{SecondQueueName}'.', Id=",
+                    $"Executing '{jobContainerType.Name}.SBQueue2SBTopic' (Reason='', Id=",
                     $"Executed '{jobContainerType.Name}.SBQueue2SBTopic' (Succeeded, Id=",
                     $"Trigger Details:",
-                    $"Executing '{jobContainerType.Name}.SBTopicListener1' (Reason='New ServiceBus message detected on '{EntityNameHelper.FormatSubscriptionPath(TopicName, TopicSubscriptionName1)}'.', Id=",
+                    $"Executing '{jobContainerType.Name}.SBTopicListener1' (Reason='', Id=",
                     $"Executed '{jobContainerType.Name}.SBTopicListener1' (Succeeded, Id=",
                     $"Trigger Details:",
-                    $"Executing '{jobContainerType.Name}.SBTopicListener2' (Reason='New ServiceBus message detected on '{EntityNameHelper.FormatSubscriptionPath(TopicName, TopicSubscriptionName2)}'.', Id=",
+                    $"Executing '{jobContainerType.Name}.SBTopicListener2' (Reason='', Id=",
                     $"Executed '{jobContainerType.Name}.SBTopicListener2' (Succeeded, Id=",
                     $"Trigger Details:",
                     "Job host stopped",
                     "Starting JobHost",
                     "Stopping JobHost",
-                    "BlobsOptions",
-                    "{",
-                    "  \"CentralizedPoisonQueue\": false",
-                    "}",
                     "FunctionResultAggregatorOptions",
                     "{",
                     "  \"BatchSize\": 1000",
@@ -357,14 +349,6 @@ namespace Microsoft.Azure.WebJobs.Host.EndToEndTests
                     "{",
                     "  \"MinLevel\": \"Information\"",
                     "  \"Rules\": []",
-                    "}",
-                    "QueuesOptions",
-                    "{",
-                    "  \"BatchSize\": 16",
-                    "  \"MaxDequeueCount\": 5,",
-                    "  \"MaxPollingInterval\": \"00:01:00\",",
-                    "  \"NewBatchThreshold\": 8,",
-                    "  \"VisibilityTimeout\": \"00:00:00\"",
                     "}",
                     "ServiceBusOptions",
                     "{",

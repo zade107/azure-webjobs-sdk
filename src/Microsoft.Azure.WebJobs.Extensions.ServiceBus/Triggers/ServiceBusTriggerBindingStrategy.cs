@@ -11,16 +11,15 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 
 namespace Microsoft.Azure.WebJobs.ServiceBus
 {
-    // Binding strategy for an service bus triggers. 
+    // Binding strategy for an service bus triggers.
     internal class ServiceBusTriggerBindingStrategy : ITriggerBindingStrategy<Message, ServiceBusTriggerInput>
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public ServiceBusTriggerInput ConvertFromString(string input)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(input);
             Message message = new Message(bytes);
 
-            // Return a single message. Doesn't support multiple dispatch 
+            // Return a single message. Doesn't support multiple dispatch
             return ServiceBusTriggerInput.New(message);
         }
 
@@ -31,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.ServiceBus
             {
                 throw new ArgumentNullException("value");
             }
+
             return value.GetSingleMessage();
         }
 
@@ -40,38 +40,8 @@ namespace Microsoft.Azure.WebJobs.ServiceBus
             {
                 throw new ArgumentNullException("value");
             }
+
             return value.Messages;
-        }
-
-        public Dictionary<string, Type> GetBindingContract(bool isSingleDispatch = true)
-        {
-            var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
-            AddBindingContractMember(contract, "DeliveryCount", typeof(int), isSingleDispatch);
-            AddBindingContractMember(contract, "DeadLetterSource", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "LockToken", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "ExpiresAtUtc", typeof(DateTime), isSingleDispatch);
-            AddBindingContractMember(contract, "EnqueuedTimeUtc", typeof(DateTime), isSingleDispatch);
-            AddBindingContractMember(contract, "MessageId", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "ContentType", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "ReplyTo", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "SequenceNumber", typeof(long), isSingleDispatch);
-            AddBindingContractMember(contract, "To", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "Label", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "CorrelationId", typeof(string), isSingleDispatch);
-            AddBindingContractMember(contract, "UserProperties", typeof(IDictionary<string, object>), isSingleDispatch);
-            contract.Add("MessageReceiver", typeof(MessageReceiver));
-            contract.Add("MessageSession", typeof(IMessageSession));
-
-            return contract;
-        }
-
-        private static void AddBindingContractMember(Dictionary<string, Type> contract, string name, Type type, bool isSingleDispatch)
-        {
-            if (!isSingleDispatch)
-            {
-                name += "Array";
-            }
-            contract.Add(name, isSingleDispatch ? type : type.MakeArrayType());
         }
 
         public Dictionary<string, object> GetBindingData(ServiceBusTriggerInput value)
@@ -95,6 +65,28 @@ namespace Microsoft.Azure.WebJobs.ServiceBus
             }
 
             return bindingData;
+        }
+
+        public Dictionary<string, Type> GetBindingContract(bool isSingleDispatch = true)
+        {
+            var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+            AddBindingContractMember(contract, "DeliveryCount", typeof(int), isSingleDispatch);
+            AddBindingContractMember(contract, "DeadLetterSource", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "LockToken", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "ExpiresAtUtc", typeof(DateTime), isSingleDispatch);
+            AddBindingContractMember(contract, "EnqueuedTimeUtc", typeof(DateTime), isSingleDispatch);
+            AddBindingContractMember(contract, "MessageId", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "ContentType", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "ReplyTo", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "SequenceNumber", typeof(long), isSingleDispatch);
+            AddBindingContractMember(contract, "To", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "Label", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "CorrelationId", typeof(string), isSingleDispatch);
+            AddBindingContractMember(contract, "UserProperties", typeof(IDictionary<string, object>), isSingleDispatch);
+            contract.Add("MessageReceiver", typeof(MessageReceiver));
+            contract.Add("MessageSession", typeof(IMessageSession));
+
+            return contract;
         }
 
         internal static void AddBindingData(Dictionary<string, object> bindingData, Message[] messages)
@@ -174,6 +166,16 @@ namespace Microsoft.Azure.WebJobs.ServiceBus
                 // some message propery getters can throw, based on the
                 // state of the message
             }
+        }
+
+        private static void AddBindingContractMember(Dictionary<string, Type> contract, string name, Type type, bool isSingleDispatch)
+        {
+            if (!isSingleDispatch)
+            {
+                name += "Array";
+            }
+
+            contract.Add(name, isSingleDispatch ? type : type.MakeArrayType());
         }
     }
 }
