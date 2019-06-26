@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.ServiceBus" Version="3.0.2" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.10" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.10-11594" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.0-beta004">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
